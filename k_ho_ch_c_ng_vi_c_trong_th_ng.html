@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kế Hoạch Công Việc Trong Tháng | Monthly Work Planner</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Dragging ghost styling */
+    .kanban-card.dragging {
+      opacity: 0.4;
+      transform: scale(0.98);
+    }
+    .kanban-column.drag-over {
+      background-color: #f1f5f9;
+      border-color: #6366f1;
+    }
+
+    /* Print styling optimized for A4 */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .calendar-grid {
+        border: 1px solid #e2e8f0;
+      }
+      .calendar-day-cell {
+        min-height: 90px !important;
+        border: 1px solid #cbd5e1 !important;
+        page-break-inside: avoid;
+      }
+      .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl {
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Branding -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+            <i data-lucide="calendar-check-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold text-slate-900 tracking-tight">WorkPlanner</h1>
+              <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-brand-100 text-brand-700">Tháng</span>
+            </div>
+            <p class="text-xs text-slate-500 hidden sm:block">Kế hoạch công việc hiệu quả & khoa học</p>
+          </div>
+        </div>
+
+        <!-- Month Navigation Controls -->
+        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <button id="prev-month-btn" class="p-1.5 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 transition-colors" title="Tháng trước">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          
+          <div class="flex items-center px-3 font-semibold text-sm text-slate-800 min-w-[150px] justify-center text-center select-none" id="current-month-display">
+            <!-- Rendered by JS -->
+          </div>
+
+          <button id="next-month-btn" class="p-1.5 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 transition-colors" title="Tháng sau">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+
+          <button id="today-btn" class="ml-1 px-2.5 py-1 text-xs font-medium bg-white text-slate-700 rounded-lg border border-slate-200 hover:border-slate-300 shadow-xs transition-all">
+            Hôm nay
+          </button>
+        </div>
+
+        <!-- Top Right Actions -->
+        <div class="flex items-center space-x-2">
+          <!-- Backup / Restore Dropdown Trigger -->
+          <button id="backup-menu-btn" class="p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors" title="Sao lưu & Dữ liệu">
+            <i data-lucide="hard-drive-download" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Print Button -->
+          <button onclick="window.print()" class="p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors hidden sm:inline-flex" title="In kế hoạch ra giấy / PDF">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+          </button>
+
+          <!-- Quick Add Task Button -->
+          <button id="btn-open-add-task" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl shadow-md shadow-brand-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Thêm công việc</span>
+            <span class="sm:hidden">Thêm</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- View Tabs Bar -->
+    <div class="border-t border-slate-200 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between overflow-x-auto py-2">
+          <nav class="flex space-x-1 sm:space-x-2" aria-label="Tabs" id="view-tabs">
+            <button data-view="calendar" class="view-tab-btn active-tab flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-brand-700 bg-brand-50 border border-brand-200/60 shadow-xs">
+              <i data-lucide="calendar" class="w-4 h-4"></i>
+              Lịch tháng
+            </button>
+            <button data-view="kanban" class="view-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
+              <i data-lucide="trello" class="w-4 h-4"></i>
+              Bảng Kanban
+            </button>
+            <button data-view="list" class="view-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
+              <i data-lucide="list-todo" class="w-4 h-4"></i>
+              Danh sách chi tiết
+            </button>
+            <button data-view="analytics" class="view-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all">
+              <i data-lucide="pie-chart" class="w-4 h-4"></i>
+              Mục tiêu & Báo cáo
+            </button>
+          </nav>
+
+          <!-- Quick Search Bar (for List & Calendar) -->
+          <div class="relative w-44 sm:w-64 hidden md:block">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="global-search-input" placeholder="Tìm kiếm việc..." class="w-full pl-9 pr-3 py-1.5 text-xs sm:text-sm rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Monthly Performance Strip -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-5 w-full no-print">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <!-- Total Tasks Card -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng việc tháng</p>
+          <h3 class="text-2xl font-bold text-slate-900 mt-1" id="stat-total-tasks">0</h3>
+          <p class="text-xs text-slate-400 mt-0.5" id="stat-month-subtitle">Kế hoạch hiện tại</p>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+          <i data-lucide="layers" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <!-- Completed Tasks Card -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đã hoàn thành</p>
+          <div class="flex items-baseline gap-2 mt-1">
+            <h3 class="text-2xl font-bold text-emerald-600" id="stat-completed-tasks">0</h3>
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full" id="stat-completed-rate">0%</span>
+          </div>
+          <div class="w-24 bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div id="stat-progress-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <i data-lucide="check-check" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <!-- In Progress Card -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đang tiến hành</p>
+          <h3 class="text-2xl font-bold text-amber-600 mt-1" id="stat-inprogress-tasks">0</h3>
+          <p class="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md mt-1 inline-block">Đang tập trung</p>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+          <i data-lucide="clock-3" class="w-6 h-6"></i>
+        </div>
+      </div>
+
+      <!-- Urgent & Overdue Card -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Khẩn cấp / Quá hạn</p>
+          <div class="flex items-center gap-2 mt-1">
+            <h3 class="text-2xl font-bold text-rose-600" id="stat-urgent-tasks">0</h3>
+            <span id="stat-overdue-badge" class="text-xs text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-md font-medium">0 trễ hạn</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Cần ưu tiên xử lý</p>
+        </div>
+        <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Body -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
+    
+    <!-- VIEW 1: LỊCH THÁNG (Calendar Grid) -->
+    <div id="view-calendar" class="view-content space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Calendar Controls & Legend -->
+        <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-slate-700">Lưới lịch tháng:</span>
+            <span id="calendar-title-tag" class="px-2.5 py-0.5 text-xs font-semibold rounded-md bg-indigo-50 text-brand-700 border border-brand-200">Tháng 9/2026</span>
+          </div>
+          
+          <!-- Legend -->
+          <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <span>Khẩn cấp</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <span>Trung bình</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              <span>Thường</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span>Đã hoàn thành</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Days of Week Header -->
+        <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-100/70 text-center text-xs font-semibold text-slate-600 py-2.5">
+          <span class="text-rose-600">Chủ Nhật</span>
+          <span>Thứ Hai</span>
+          <span>Thứ Ba</span>
+          <span>Thứ Tư</span>
+          <span>Thứ Năm</span>
+          <span>Thứ Sáu</span>
+          <span class="text-indigo-600">Thứ Bảy</span>
+        </div>
+
+        <!-- Calendar Day Cells Grid -->
+        <div id="calendar-grid" class="grid grid-cols-7 divide-x divide-y divide-slate-200 min-h-[640px] bg-slate-100/30">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: BẢNG KANBAN (Kanban Board) -->
+    <div id="view-kanban" class="view-content hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Cột 1: Cần làm (To-do) -->
+        <div class="kanban-column bg-slate-100/90 rounded-2xl p-4 border border-slate-200 flex flex-col h-[750px] transition-colors" data-status="todo" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'todo')">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-slate-400"></span>
+              <h3 class="font-bold text-slate-800 text-sm">Chưa bắt đầu</h3>
+            </div>
+            <span id="kanban-count-todo" class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">0</span>
+          </div>
+          
+          <div id="kanban-list-todo" class="flex-1 overflow-y-auto pt-3 space-y-3 pr-1">
+            <!-- Dynamic Cards -->
+          </div>
+
+          <button onclick="openAddTaskModalWithStatus('todo')" class="mt-3 w-full py-2 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:text-brand-600 hover:border-brand-400 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors bg-white/50 hover:bg-white">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm việc cần làm
+          </button>
+        </div>
+
+        <!-- Cột 2: Đang làm (In Progress) -->
+        <div class="kanban-column bg-amber-50/50 rounded-2xl p-4 border border-amber-200/80 flex flex-col h-[750px] transition-colors" data-status="in-progress" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'in-progress')">
+          <div class="flex items-center justify-between pb-3 border-b border-amber-200">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+              <h3 class="font-bold text-amber-900 text-sm">Đang thực hiện</h3>
+            </div>
+            <span id="kanban-count-inprogress" class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-800">0</span>
+          </div>
+          
+          <div id="kanban-list-in-progress" class="flex-1 overflow-y-auto pt-3 space-y-3 pr-1">
+            <!-- Dynamic Cards -->
+          </div>
+
+          <button onclick="openAddTaskModalWithStatus('in-progress')" class="mt-3 w-full py-2 border-2 border-dashed border-amber-300 rounded-xl text-amber-700 hover:text-amber-800 hover:border-amber-400 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors bg-white/50 hover:bg-white">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm việc đang tiến hành
+          </button>
+        </div>
+
+        <!-- Cột 3: Đã hoàn thành (Done) -->
+        <div class="kanban-column bg-emerald-50/50 rounded-2xl p-4 border border-emerald-200/80 flex flex-col h-[750px] transition-colors" data-status="done" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'done')">
+          <div class="flex items-center justify-between pb-3 border-b border-emerald-200">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <h3 class="font-bold text-emerald-900 text-sm">Đã hoàn thành</h3>
+            </div>
+            <span id="kanban-count-done" class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-200 text-emerald-800">0</span>
+          </div>
+          
+          <div id="kanban-list-done" class="flex-1 overflow-y-auto pt-3 space-y-3 pr-1">
+            <!-- Dynamic Cards -->
+          </div>
+
+          <button onclick="openAddTaskModalWithStatus('done')" class="mt-3 w-full py-2 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 hover:text-emerald-800 hover:border-emerald-400 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors bg-white/50 hover:bg-white">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm việc đã hoàn thành
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: DANH SÁCH CHI TIẾT (List View) -->
+    <div id="view-list" class="view-content hidden space-y-4">
+      <!-- Filter Bar -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Filter Category -->
+          <div class="flex items-center gap-1.5">
+            <label class="text-xs font-medium text-slate-500">Phân loại:</label>
+            <select id="filter-category" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-brand-500">
+              <option value="all">Tất cả phân loại</option>
+              <option value="project">Dự án chính</option>
+              <option value="meeting">Họp hành / Gặp mặt</option>
+              <option value="report">Báo cáo / Giấy tờ</option>
+              <option value="core">Công việc định kỳ</option>
+              <option value="personal">Cá nhân / Học tập</option>
+            </select>
+          </div>
+
+          <!-- Filter Priority -->
+          <div class="flex items-center gap-1.5">
+            <label class="text-xs font-medium text-slate-500">Mức ưu tiên:</label>
+            <select id="filter-priority" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-brand-500">
+              <option value="all">Tất cả mức độ</option>
+              <option value="urgent">Khẩn cấp (High)</option>
+              <option value="medium">Trung bình (Medium)</option>
+              <option value="low">Thấp (Low)</option>
+            </select>
+          </div>
+
+          <!-- Filter Status -->
+          <div class="flex items-center gap-1.5">
+            <label class="text-xs font-medium text-slate-500">Trạng thái:</label>
+            <select id="filter-status" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-brand-500">
+              <option value="all">Tất cả trạng thái</option>
+              <option value="todo">Chưa bắt đầu</option>
+              <option value="in-progress">Đang tiến hành</option>
+              <option value="done">Đã hoàn thành</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="text-xs text-slate-500 font-medium">
+          Hiển thị: <span id="list-filtered-count" class="font-bold text-slate-900">0</span> công việc
+        </div>
+      </div>
+
+      <!-- Tasks List Table / Cards -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="divide-y divide-slate-100" id="tasks-list-container">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: MỤC TIÊU & BÁO CÁO (Analytics & Monthly Goals) -->
+    <div id="view-analytics" class="view-content hidden space-y-6">
+      <!-- Monthly Key Goals (OKRs) Box -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                <i data-lucide="target" class="w-5 h-5"></i>
+              </div>
+              <h2 class="text-lg font-bold text-slate-900">Mục Tiêu Trọng Tâm Tháng Này (Monthly OKRs)</h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Các cột mốc quan trọng nhất bạn cam kết hoàn thành trong tháng</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="text-right">
+              <span class="text-xs text-slate-400">Tiến độ mục tiêu:</span>
+              <p class="text-sm font-bold text-brand-600" id="goals-progress-text">0% (0/0)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Goal Input -->
+        <form id="form-add-goal" class="mt-4 flex gap-2">
+          <input type="text" id="input-new-goal" required placeholder="Ví dụ: Đạt mốc 100% nghiệm thu dự án A, Đọc xong 1 cuốn sách..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+          <button type="submit" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-all shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i> Thêm mục tiêu
+          </button>
+        </form>
+
+        <!-- Goals Checklist List -->
+        <div id="goals-list" class="mt-4 space-y-2.5">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- Distribution and Breakdown Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Category Distribution Breakdown -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-brand-500"></i>
+            Phân bổ theo danh mục công việc
+          </h3>
+          <div id="category-distribution-bars" class="space-y-3">
+            <!-- Dynamic Bars -->
+          </div>
+        </div>
+
+        <!-- Priority Breakdown & Time Management Tips -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
+              <i data-lucide="bar-chart-2" class="w-4 h-4 text-amber-500"></i>
+              Mức độ ưu tiên (Eisenhower Matrix)
+            </h3>
+            <div id="priority-distribution-bars" class="space-y-3">
+              <!-- Dynamic Bars -->
+            </div>
+          </div>
+
+          <!-- Productivity Tip -->
+          <div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 border border-brand-100 flex items-start gap-3">
+            <div class="p-2 rounded-lg bg-white text-brand-600 shadow-xs mt-0.5">
+              <i data-lucide="lightbulb" class="w-4 h-4"></i>
+            </div>
+            <div class="text-xs text-slate-700 leading-relaxed">
+              <strong class="font-semibold text-brand-900 block mb-0.5">Mẹo năng suất cho tháng:</strong>
+              Hãy xử lý các việc <span class="text-rose-600 font-semibold">Khẩn cấp</span> vào đầu ngày hoặc sáng Thứ Hai. Duy trì tỷ lệ việc hoàn thành mỗi tuần từ 80% trở lên để tránh áp lực dồn dập vào tuần cuối tháng!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: Thêm / Chỉnh sửa công việc -->
+  <div id="task-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+        <h3 id="modal-title" class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i data-lucide="calendar-plus" class="w-5 h-5 text-brand-600"></i>
+          <span>Thêm công việc mới</span>
+        </h3>
+        <button id="modal-close-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="task-form" class="p-6 space-y-4">
+        <input type="hidden" id="task-edit-id">
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Tiêu đề công việc <span class="text-rose-500">*</span></label>
+          <input type="text" id="task-title" required placeholder="Nhập tên công việc cần làm..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+        </div>
+
+        <!-- Date & Time -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Ngày thực hiện <span class="text-rose-500">*</span></label>
+            <input type="date" id="task-date" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Khung giờ</label>
+            <input type="time" id="task-time" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+          </div>
+        </div>
+
+        <!-- Priority & Category -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Mức độ ưu tiên</label>
+            <select id="task-priority" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+              <option value="urgent">🔴 Khẩn cấp (High)</option>
+              <option value="medium" selected>🟡 Trung bình (Medium)</option>
+              <option value="low">🔵 Thấp (Low)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Phân loại</label>
+            <select id="task-category" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+              <option value="project">🚀 Dự án chính</option>
+              <option value="meeting">🤝 Họp hành / Gặp mặt</option>
+              <option value="report">📄 Báo cáo / Giấy tờ</option>
+              <option value="core">⚡ Công việc định kỳ</option>
+              <option value="personal">🌱 Cá nhân / Học tập</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Trạng thái ban đầu</label>
+          <select id="task-status" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all">
+            <option value="todo">Chưa bắt đầu</option>
+            <option value="in-progress">Đang thực hiện</option>
+            <option value="done">Đã hoàn thành</option>
+          </select>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Ghi chú chi tiết / Checklist</label>
+          <textarea id="task-notes" rows="2" placeholder="Thêm mô tả, link tài liệu hoặc ghi chú..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button type="button" id="modal-cancel-btn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+            Hủy bỏ
+          </button>
+          <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-md shadow-brand-500/20 transition-all">
+            Lưu công việc
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Chi tiết ngày (Day Inspector) -->
+  <div id="day-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+        <div>
+          <h3 id="day-modal-title" class="font-bold text-slate-800 text-base">Kế hoạch ngày</h3>
+          <p id="day-modal-subtitle" class="text-xs text-slate-500">Danh sách việc trong ngày</p>
+        </div>
+        <button id="day-modal-close-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 max-h-[420px] overflow-y-auto space-y-3" id="day-tasks-list">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+        <button id="day-modal-add-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="plus" class="w-4 h-4"></i> Thêm việc vào ngày này
+        </button>
+        <button onclick="closeDayModal()" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Sao lưu & Phục hồi dữ liệu -->
+  <div id="backup-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-100 p-6 space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i>
+          Quản Lý Dữ Liệu
+        </h3>
+        <button id="backup-modal-close-btn" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-600">
+        <p>Toàn bộ kế hoạch được tự động lưu trên trình duyệt của bạn (Local Storage). Bạn có thể sao lưu ra tệp JSON để mang sang máy tính khác hoặc lưu trữ an toàn.</p>
+
+        <!-- Export -->
+        <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+          <div>
+            <strong class="text-slate-800 font-semibold block">Xuất file dữ liệu (JSON)</strong>
+            <span class="text-slate-400 text-[11px]">Lưu toàn bộ danh sách việc và mục tiêu</span>
+          </div>
+          <button id="btn-export-data" class="px-3 py-1.5 bg-white border border-slate-300 hover:border-slate-400 font-semibold text-slate-700 rounded-xl shadow-xs transition-colors">
+            Tải về
+          </button>
+        </div>
+
+        <!-- Import -->
+        <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+          <div>
+            <strong class="text-slate-800 font-semibold block">Nhập file dữ liệu</strong>
+            <span class="text-slate-400 text-[11px]">Khôi phục dữ liệu từ tệp .json</span>
+          </div>
+          <label class="px-3 py-1.5 bg-brand-50 border border-brand-200 text-brand-700 font-semibold rounded-xl cursor-pointer hover:bg-brand-100 transition-colors">
+            Chọn tệp
+            <input type="file" id="input-import-file" accept=".json" class="hidden">
+          </label>
+        </div>
+
+        <!-- Clear all reset -->
+        <div class="p-3.5 bg-rose-50 rounded-2xl border border-rose-100 flex items-center justify-between">
+          <div>
+            <strong class="text-rose-800 font-semibold block">Cài lại dữ liệu mẫu</strong>
+            <span class="text-rose-500 text-[11px]">Khôi phục về trạng thái kế hoạch ban đầu</span>
+          </div>
+          <button id="btn-reset-sample" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition-colors">
+            Khôi phục
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Dialog (Replaces native confirm) -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden no-print">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 id="confirm-title" class="text-sm font-bold text-slate-900">Xác nhận xóa</h4>
+          <p id="confirm-message" class="text-xs text-slate-500 mt-0.5">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="confirm-cancel-btn" class="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Hủy</button>
+        <button id="confirm-ok-btn" class="px-4 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-16 opacity-0 transition-all duration-300 flex items-center gap-2.5 px-4 py-3 bg-slate-900 text-white text-xs font-medium rounded-2xl shadow-xl border border-slate-700/50 pointer-events-none no-print">
+    <i id="toast-icon" data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-message">Thông báo hệ thống</span>
+  </div>
+
+  <script>
+    /* Global Application State */
+    const STORAGE_KEY_TASKS = 'monthly_planner_tasks_v2';
+    const STORAGE_KEY_GOALS = 'monthly_planner_goals_v2';
+
+    // Current viewing date (default to current system date)
+    let currentDate = new Date();
+    let selectedDateForTask = null;
+    let draggedTaskId = null;
+
+    // Category dictionary for UI
+    const CATEGORIES = {
+      project: { label: 'Dự án chính', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+      meeting: { label: 'Họp hành', color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+      report: { label: 'Báo cáo', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+      core: { label: 'Định kỳ', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+      personal: { label: 'Cá nhân', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    };
+
+    // Priority colors
+    const PRIORITIES = {
+      urgent: { label: 'Khẩn cấp', dot: 'bg-rose-500', badge: 'bg-rose-50 text-rose-700 border-rose-200' },
+      medium: { label: 'Trung bình', dot: 'bg-amber-500', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
+      low: { label: 'Thấp', dot: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+    };
+
+    // Category labels for breakdown
+    const CATEGORY_NAMES = {
+      project: 'Dự án chính',
+      meeting: 'Họp hành / Gặp mặt',
+      report: 'Báo cáo / Giấy tờ',
+      core: 'Công việc định kỳ',
+      personal: 'Cá nhân / Học tập'
+    };
+
+    // Vietnamese month names
+    const MONTH_NAMES_VI = [
+      'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+      'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+    ];
+
+    /* Helper: format zero padding */
+    function padZero(num) {
+      return num < 10 ? '0' + num : num;
+    }
+
+    /* Format Date helper to YYYY-MM-DD */
+    function formatDateToKey(d) {
+      return `${d.getFullYear()}-${padZero(d.getMonth() + 1)}-${padZero(d.getDate())}`;
+    }
+
+    // Initial Mock Tasks for user discovery
+    function generateInitialTasks() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      const mStr = padZero(month);
+
+      return [
+        {
+          id: 'task-1',
+          title: 'Họp giao ban đầu tháng & Phân bổ mục tiêu phòng',
+          date: `${year}-${mStr}-02`,
+          time: '09:00',
+          priority: 'urgent',
+          category: 'meeting',
+          status: 'done',
+          notes: 'Thống nhất KPI tháng và phân bổ chỉ số cho từng nhóm dự án.'
+        },
+        {
+          id: 'task-2',
+          title: 'Hoàn thiện bản thiết kế UI/UX phiên bản mới',
+          date: `${year}-${mStr}-08`,
+          time: '14:30',
+          priority: 'medium',
+          category: 'project',
+          status: 'done',
+          notes: 'Kiểm tra độ tương thích trên thiết bị di động và tablet.'
+        },
+        {
+          id: 'task-3',
+          title: 'Soát xét hợp đồng đối tác và hóa đơn thanh toán',
+          date: `${year}-${mStr}-12`,
+          time: '10:00',
+          priority: 'urgent',
+          category: 'report',
+          status: 'in-progress',
+          notes: 'Chờ chữ ký số của Giám đốc tài chính.'
+        },
+        {
+          id: 'task-4',
+          title: 'Nghiệm thu Sprint 1 & Lên kế hoạch Sprint 2',
+          date: `${year}-${mStr}-18`,
+          time: '15:00',
+          priority: 'urgent',
+          category: 'project',
+          status: 'in-progress',
+          notes: 'Demo sản phẩm cho các bên liên quan và thu thập phản hồi.'
+        },
+        {
+          id: 'task-5',
+          title: 'Bảo trì hệ thống máy chủ và sao lưu dữ liệu',
+          date: `${year}-${mStr}-22`,
+          time: '20:00',
+          priority: 'medium',
+          category: 'core',
+          status: 'todo',
+          notes: 'Kiểm tra dung lượng lưu trữ đám mây và dọn dẹp cache.'
+        },
+        {
+          id: 'task-6',
+          title: 'Tổng kết doanh số & Báo cáo kết quả cuối tháng',
+          date: `${year}-${mStr}-28`,
+          time: '16:00',
+          priority: 'urgent',
+          category: 'report',
+          status: 'todo',
+          notes: 'Tổng hợp số liệu từ các phòng ban và xuất báo cáo PDF.'
+        },
+        {
+          id: 'task-7',
+          title: 'Đọc 30 trang sách Quản Trị Thời Gian & Học ngoại ngữ',
+          date: `${year}-${mStr}-15`,
+          time: '21:00',
+          priority: 'low',
+          category: 'personal',
+          status: 'done',
+          notes: 'Duy trì thói quen học tập 30 phút mỗi tối.'
+        }
+      ];
+    }
+
+    function generateInitialGoals() {
+      const ym = `${currentDate.getFullYear()}-${padZero(currentDate.getMonth() + 1)}`;
+      return [
+        { id: 'goal-1', monthYear: ym, title: 'Hoàn thành đúng hạn 100% các cột mốc dự án quý', completed: true },
+        { id: 'goal-2', monthYear: ym, title: 'Tối ưu hóa quy trình làm việc và giảm 20% thời gian họp không cần thiết', completed: false },
+        { id: 'goal-3', monthYear: ym, title: 'Duy trì tỷ lệ công việc hoàn thành trên 85%', completed: false }
+      ];
+    }
+
+    // Load from LocalStorage or seed defaults
+    function getTasks() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_TASKS);
+        return stored ? JSON.parse(stored) : generateInitialTasks();
+      } catch (e) {
+        return generateInitialTasks();
+      }
+    }
+
+    function saveTasks(tasks) {
+      localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
+      renderCurrentView();
+      updateHeaderStats();
+    }
+
+    function getGoals() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_GOALS);
+        return stored ? JSON.parse(stored) : generateInitialGoals();
+      } catch (e) {
+        return generateInitialGoals();
+      }
+    }
+
+    function saveGoals(goals) {
+      localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(goals));
+      renderGoals();
+    }
+
+    // Helper: Is task overdue?
+    function isTaskOverdue(task) {
+      if (task.status === 'done') return false;
+      const todayKey = formatDateToKey(new Date());
+      return task.date < todayKey;
+    }
+
+    // Render Calendar View
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-based
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+      const totalDays = lastDayOfMonth.getDate();
+      
+      // Day of week for 1st day (0 = Sunday, 1 = Monday, etc.)
+      const startingDay = firstDayOfMonth.getDay();
+      
+      // Days from previous month to fill first row
+      const prevMonthLastDay = new Date(year, month, 0).getDate();
+      
+      const tasks = getTasks();
+      const todayKey = formatDateToKey(new Date());
+      const currentMonthKey = `${year}-${padZero(month + 1)}`;
+
+      document.getElementById('calendar-title-tag').textContent = `${MONTH_NAMES_VI[month]}/${year}`;
+
+      // 1. Previous month trailing cells
+      for (let i = 0; i < startingDay; i++) {
+        const dayNum = prevMonthLastDay - startingDay + i + 1;
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell min-h-[110px] p-1.5 bg-slate-50/50 text-slate-300 opacity-60 flex flex-col select-none cursor-not-allowed';
+        cell.innerHTML = `<span class="text-xs font-medium text-slate-400">${dayNum}</span>`;
+        grid.appendChild(cell);
+      }
+
+      // 2. Current Month active cells
+      for (let day = 1; day <= totalDays; day++) {
+        const dayString = `${year}-${padZero(month + 1)}-${padZero(day)}`;
+        const isToday = dayString === todayKey;
+        const dayTasks = tasks.filter(t => t.date === dayString);
+
+        const cell = document.createElement('div');
+        cell.className = `calendar-day-cell min-h-[110px] p-1.5 bg-white hover:bg-indigo-50/20 transition-all flex flex-col group cursor-pointer relative ${isToday ? 'ring-2 ring-brand-500/80 bg-brand-50/30' : ''}`;
+        
+        // Header in day cell
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between mb-1.5';
+        
+        const dayBadge = document.createElement('span');
+        dayBadge.className = `text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full transition-all ${
+          isToday ? 'bg-brand-600 text-white shadow-xs' : 'text-slate-700 group-hover:bg-slate-200'
+        }`;
+        dayBadge.textContent = day;
+        header.appendChild(dayBadge);
+
+        // Add task quick button in cell
+        const addBtn = document.createElement('button');
+        addBtn.className = 'opacity-0 group-hover:opacity-100 p-1 rounded-md text-slate-400 hover:text-brand-600 hover:bg-white transition-opacity';
+        addBtn.title = 'Thêm việc ngày này';
+        addBtn.innerHTML = `<i data-lucide="plus" class="w-3 h-3"></i>`;
+        addBtn.onclick = (e) => {
+          e.stopPropagation();
+          openAddTaskModal(dayString);
+        };
+        header.appendChild(addBtn);
+
+        cell.appendChild(header);
+
+        // Tasks pills inside cell
+        const tasksWrapper = document.createElement('div');
+        tasksWrapper.className = 'flex-1 space-y-1 overflow-hidden';
+
+        const maxVisible = 3;
+        dayTasks.slice(0, maxVisible).forEach(task => {
+          const pill = document.createElement('div');
+          const isDone = task.status === 'done';
+          const isOverdue = isTaskOverdue(task);
+          
+          let colorStyle = 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+          if (isDone) {
+            colorStyle = 'bg-emerald-50 text-emerald-700 line-through opacity-70';
+          } else if (isOverdue) {
+            colorStyle = 'bg-rose-50 text-rose-700 border-l-2 border-rose-500';
+          } else if (task.priority === 'urgent') {
+            colorStyle = 'bg-rose-50 text-rose-800 border-l-2 border-rose-500';
+          } else if (task.priority === 'medium') {
+            colorStyle = 'bg-amber-50 text-amber-800 border-l-2 border-amber-400';
+          }
+
+          pill.className = `text-[11px] leading-tight px-1.5 py-1 rounded truncate flex items-center gap-1 font-medium transition-transform active:scale-95 shadow-2xs ${colorStyle}`;
+          pill.title = `${task.time ? task.time + ' - ' : ''}${task.title}`;
+          pill.innerHTML = `
+            <span class="w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITIES[task.priority]?.dot || 'bg-slate-400'}"></span>
+            <span class="truncate">${task.title}</span>
+          `;
+          
+          pill.onclick = (e) => {
+            e.stopPropagation();
+            openEditTaskModal(task.id);
+          };
+
+          tasksWrapper.appendChild(pill);
+        });
+
+        // More indicator
+        if (dayTasks.length > maxVisible) {
+          const moreTag = document.createElement('div');
+          moreTag.className = 'text-[10px] text-brand-600 font-semibold pl-1 hover:underline';
+          moreTag.textContent = `+${dayTasks.length - maxVisible} việc nữa...`;
+          tasksWrapper.appendChild(moreTag);
+        }
+
+        cell.appendChild(tasksWrapper);
+
+        // Cell Click -> Open Day Inspector Modal
+        cell.onclick = () => {
+          openDayModal(dayString, dayTasks);
+        };
+
+        grid.appendChild(cell);
+      }
+
+      // 3. Next month trailing cells to fill 35 or 42 grid slots
+      const totalRendered = startingDay + totalDays;
+      const remaining = (totalRendered <= 35 ? 35 : 42) - totalRendered;
+      for (let j = 1; j <= remaining; j++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-cell min-h-[110px] p-1.5 bg-slate-50/50 text-slate-300 opacity-60 flex flex-col select-none cursor-not-allowed';
+        cell.innerHTML = `<span class="text-xs font-medium text-slate-400">${j}</span>`;
+        grid.appendChild(cell);
+      }
+
+      lucide.createIcons();
+    }
+
+    // Render Kanban View
+    function renderKanban() {
+      const tasks = getTasks();
+      const currentYearMonth = `${currentDate.getFullYear()}-${padZero(currentDate.getMonth() + 1)}`;
+      
+      // Filter tasks in current month
+      const monthTasks = tasks.filter(t => t.date.startsWith(currentYearMonth));
+
+      const todoList = document.getElementById('kanban-list-todo');
+      const inProgressList = document.getElementById('kanban-list-in-progress');
+      const doneList = document.getElementById('kanban-list-done');
+
+      todoList.innerHTML = '';
+      inProgressList.innerHTML = '';
+      doneList.innerHTML = '';
+
+      let countTodo = 0, countInProgress = 0, countDone = 0;
+
+      monthTasks.forEach(task => {
+        const card = createKanbanCard(task);
+        if (task.status === 'todo') {
+          todoList.appendChild(card);
+          countTodo++;
+        } else if (task.status === 'in-progress') {
+          inProgressList.appendChild(card);
+          countInProgress++;
+        } else {
+          doneList.appendChild(card);
+          countDone++;
+        }
+      });
+
+      document.getElementById('kanban-count-todo').textContent = countTodo;
+      document.getElementById('kanban-count-inprogress').textContent = countInProgress;
+      document.getElementById('kanban-count-done').textContent = countDone;
+
+      lucide.createIcons();
+    }
+
+    function createKanbanCard(task) {
+      const card = document.createElement('div');
+      card.className = 'kanban-card bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all cursor-grab active:cursor-grabbing space-y-2.5';
+      card.draggable = true;
+      card.setAttribute('data-id', task.id);
+
+      const catInfo = CATEGORIES[task.category] || CATEGORIES.core;
+      const prioInfo = PRIORITIES[task.priority] || PRIORITIES.medium;
+      const isOverdue = isTaskOverdue(task);
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${catInfo.color}">
+            ${catInfo.label}
+          </span>
+          <span class="flex items-center gap-1 text-[11px] font-semibold ${prioInfo.badge} px-2 py-0.5 rounded-full border">
+            <span class="w-1.5 h-1.5 rounded-full ${prioInfo.dot}"></span>
+            ${prioInfo.label}
+          </span>
+        </div>
+
+        <h4 class="text-xs sm:text-sm font-semibold text-slate-800 line-clamp-2 ${task.status === 'done' ? 'line-through text-slate-400' : ''}">
+          ${task.title}
+        </h4>
+
+        ${task.notes ? `<p class="text-xs text-slate-500 line-clamp-1 italic">${task.notes}</p>` : ''}
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span class="flex items-center gap-1 font-medium ${isOverdue ? 'text-rose-600 font-bold' : ''}">
+            <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+            ${task.date.split('-').slice(1).reverse().join('/')}
+            ${task.time ? `<span class="text-slate-400">(${task.time})</span>` : ''}
+          </span>
+
+          <div class="flex items-center gap-1">
+            <button onclick="openEditTaskModal('${task.id}')" class="p-1 text-slate-400 hover:text-brand-600 rounded transition-colors" title="Chỉnh sửa">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="promptDeleteTask('${task.id}')" class="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors" title="Xóa">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Drag events
+      card.addEventListener('dragstart', (e) => {
+        draggedTaskId = task.id;
+        card.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', task.id);
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+
+      return card;
+    }
+
+    // Drag & Drop handlers for Kanban
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over');
+    }
+
+    function handleDrop(e, newStatus) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over');
+      if (!draggedTaskId) return;
+
+      const tasks = getTasks();
+      const taskIndex = tasks.findIndex(t => t.id === draggedTaskId);
+      if (taskIndex !== -1 && tasks[taskIndex].status !== newStatus) {
+        tasks[taskIndex].status = newStatus;
+        saveTasks(tasks);
+        showToast(`Đã chuyển việc sang: ${newStatus === 'todo' ? 'Cần làm' : (newStatus === 'in-progress' ? 'Đang thực hiện' : 'Hoàn thành')}`);
+      }
+      draggedTaskId = null;
+    }
+
+    // Render Detailed List View
+    function renderListView() {
+      const container = document.getElementById('tasks-list-container');
+      container.innerHTML = '';
+
+      const tasks = getTasks();
+      const currentYearMonth = `${currentDate.getFullYear()}-${padZero(currentDate.getMonth() + 1)}`;
+      
+      const filterCat = document.getElementById('filter-category').value;
+      const filterPrio = document.getElementById('filter-priority').value;
+      const filterStat = document.getElementById('filter-status').value;
+      const searchQuery = (document.getElementById('global-search-input').value || '').toLowerCase().trim();
+
+      // Filter
+      let filtered = tasks.filter(t => t.date.startsWith(currentYearMonth));
+
+      if (filterCat !== 'all') filtered = filtered.filter(t => t.category === filterCat);
+      if (filterPrio !== 'all') filtered = filtered.filter(t => t.priority === filterPrio);
+      if (filterStat !== 'all') filtered = filtered.filter(t => t.status === filterStat);
+      if (searchQuery) {
+        filtered = filtered.filter(t => 
+          t.title.toLowerCase().includes(searchQuery) || 
+          (t.notes && t.notes.toLowerCase().includes(searchQuery))
+        );
+      }
+
+      // Sort by Date ascending
+      filtered.sort((a, b) => a.date.localeCompare(b.date));
+
+      document.getElementById('list-filtered-count').textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-400">
+            <i data-lucide="clipboard-x" class="w-10 h-10 mx-auto stroke-1 mb-2"></i>
+            <p class="text-sm">Không tìm thấy công việc nào phù hợp với bộ lọc.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(task => {
+        const item = document.createElement('div');
+        const isDone = task.status === 'done';
+        const isOverdue = isTaskOverdue(task);
+        const catInfo = CATEGORIES[task.category] || CATEGORIES.core;
+        const prioInfo = PRIORITIES[task.priority] || PRIORITIES.medium;
+
+        item.className = `p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isDone ? 'bg-slate-50/40' : ''}`;
+
+        item.innerHTML = `
+          <div class="flex items-start gap-3 flex-1">
+            <button onclick="toggleTaskStatus('${task.id}')" class="mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+              isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-brand-500 bg-white'
+            }">
+              ${isDone ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+            </button>
+            <div class="space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-semibold text-slate-900 ${isDone ? 'line-through text-slate-400' : ''}">${task.title}</span>
+                ${isOverdue ? '<span class="text-[10px] font-bold px-1.5 py-0.5 bg-rose-100 text-rose-700 rounded">Quá hạn</span>' : ''}
+              </div>
+              ${task.notes ? `<p class="text-xs text-slate-500">${task.notes}</p>` : ''}
+              <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                <span class="px-2 py-0.5 rounded text-[11px] border font-medium ${catInfo.color}">${catInfo.label}</span>
+                <span class="px-2 py-0.5 rounded text-[11px] border font-medium ${prioInfo.badge}">${prioInfo.label}</span>
+                <span class="text-slate-400 flex items-center gap-1 font-medium">
+                  <i data-lucide="calendar" class="w-3 h-3"></i> ${task.date} ${task.time ? `(${task.time})` : ''}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-end sm:self-center">
+            <!-- Status Pill dropdown or quick toggle -->
+            <select onchange="updateTaskStatusDirectly('${task.id}', this.value)" class="text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white">
+              <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Chưa làm</option>
+              <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>Đang làm</option>
+              <option value="done" ${task.status === 'done' ? 'selected' : ''}>Hoàn thành</option>
+            </select>
+
+            <button onclick="openEditTaskModal('${task.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Sửa">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button onclick="promptDeleteTask('${task.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg border border-transparent hover:border-slate-200 transition-colors" title="Xóa">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        container.appendChild(item);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Render Goals and Analytics View
+    function renderGoals() {
+      const ym = `${currentDate.getFullYear()}-${padZero(currentDate.getMonth() + 1)}`;
+      const allGoals = getGoals();
+      const monthGoals = allGoals.filter(g => g.monthYear === ym);
+
+      const listContainer = document.getElementById('goals-list');
+      listContainer.innerHTML = '';
+
+      const completedCount = monthGoals.filter(g => g.completed).length;
+      const totalCount = monthGoals.length;
+      const rate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+      document.getElementById('goals-progress-text').textContent = `${rate}% (${completedCount}/${totalCount})`;
+
+      if (monthGoals.length === 0) {
+        listContainer.innerHTML = `
+          <p class="text-xs text-slate-400 italic py-3 text-center">Chưa có mục tiêu trọng tâm nào cho tháng này. Hãy thêm mục tiêu ở trên!</p>
+        `;
+      } else {
+        monthGoals.forEach(goal => {
+          const item = document.createElement('div');
+          item.className = 'flex items-center justify-between p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white transition-all';
+          item.innerHTML = `
+            <div class="flex items-center gap-3">
+              <input type="checkbox" ${goal.completed ? 'checked' : ''} onchange="toggleGoalStatus('${goal.id}')" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer">
+              <span class="text-xs sm:text-sm font-medium ${goal.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${goal.title}</span>
+            </div>
+            <button onclick="deleteGoal('${goal.id}')" class="text-slate-300 hover:text-rose-500 p-1 transition-colors">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          `;
+          listContainer.appendChild(item);
+        });
+      }
+
+      // Render Charts / Visual Breakdowns
+      renderBreakdowns();
+      lucide.createIcons();
+    }
+
+    function renderBreakdowns() {
+      const tasks = getTasks();
+      const currentYearMonth = `${currentDate.getFullYear()}-${padZero(currentDate.getMonth() + 1)}`;
+      const monthTasks = tasks.filter(t => t.date.startsWith(currentYearMonth));
+      const total = monthTasks.length;
+
+      // 1. Category Distribution
+      const catCounts = { project: 0, meeting: 0, report: 0, core: 0, personal: 0 };
+      monthTasks.forEach(t => {
+        if (catCounts[t.category] !== undefined) catCounts[t.category]++;
+      });
+
+      const catContainer = document.getElementById('category-distribution-bars');
+      catContainer.innerHTML = '';
+      
+      Object.keys(catCounts).forEach(cat => {
+        const count = catCounts[cat];
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        const bar = document.createElement('div');
+        bar.className = 'space-y-1';
+        bar.innerHTML = `
+          <div class="flex justify-between text-xs font-medium text-slate-600">
+            <span>${CATEGORY_NAMES[cat]}</span>
+            <span>${count} việc (${pct}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div class="bg-brand-500 h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        `;
+        catContainer.appendChild(bar);
+      });
+
+      // 2. Priority Distribution
+      const prioCounts = { urgent: 0, medium: 0, low: 0 };
+      monthTasks.forEach(t => {
+        if (prioCounts[t.priority] !== undefined) prioCounts[t.priority]++;
+      });
+
+      const prioContainer = document.getElementById('priority-distribution-bars');
+      prioContainer.innerHTML = '';
+      
+      const prioMeta = [
+        { key: 'urgent', name: '🔴 Khẩn cấp (High)', color: 'bg-rose-500' },
+        { key: 'medium', name: '🟡 Trung bình (Medium)', color: 'bg-amber-500' },
+        { key: 'low', name: '🔵 Thấp (Low)', color: 'bg-blue-500' },
+      ];
+
+      prioMeta.forEach(pm => {
+        const count = prioCounts[pm.key];
+        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+        const bar = document.createElement('div');
+        bar.className = 'space-y-1';
+        bar.innerHTML = `
+          <div class="flex justify-between text-xs font-medium text-slate-600">
+            <span>${pm.name}</span>
+            <span>${count} việc (${pct}%)</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div class="${pm.color} h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        `;
+        prioContainer.appendChild(bar);
+      });
+    }
+
+    // Top Statistics Ribbon Update
+    function updateHeaderStats() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      const ym = `${year}-${padZero(month)}`;
+
+      // Update Month Header
+      document.getElementById('current-month-display').textContent = `${MONTH_NAMES_VI[month - 1]} năm ${year}`;
+      document.getElementById('stat-month-subtitle').textContent = `Tháng ${month}/${year}`;
+
+      const tasks = getTasks();
+      const monthTasks = tasks.filter(t => t.date.startsWith(ym));
+
+      const total = monthTasks.length;
+      const completed = monthTasks.filter(t => t.status === 'done').length;
+      const inProgress = monthTasks.filter(t => t.status === 'in-progress').length;
+      const urgent = monthTasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length;
+      const overdue = monthTasks.filter(t => isTaskOverdue(t)).length;
+
+      const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      document.getElementById('stat-total-tasks').textContent = total;
+      document.getElementById('stat-completed-tasks').textContent = completed;
+      document.getElementById('stat-completed-rate').textContent = `${rate}%`;
+      document.getElementById('stat-progress-bar').style.width = `${rate}%`;
+      document.getElementById('stat-inprogress-tasks').textContent = inProgress;
+      document.getElementById('stat-urgent-tasks').textContent = urgent;
+      document.getElementById('stat-overdue-badge').textContent = `${overdue} trễ hạn`;
+
+      // Trigger Confetti if 100% completed with at least 5 tasks!
+      if (total >= 3 && rate === 100) {
+        triggerSuccessCelebration();
+      }
+    }
+
+    function triggerSuccessCelebration() {
+      try {
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 }
+          });
+        }
+      } catch(e) {}
+    }
+
+    /* Render Active View Router */
+    function renderCurrentView() {
+      const activeBtn = document.querySelector('.view-tab-btn.active-tab');
+      const view = activeBtn ? activeBtn.getAttribute('data-view') : 'calendar';
+
+      if (view === 'calendar') renderCalendar();
+      else if (view === 'kanban') renderKanban();
+      else if (view === 'list') renderListView();
+      else if (view === 'analytics') renderGoals();
+    }
+
+    // Open Add Modal
+    function openAddTaskModal(prefillDate = null) {
+      document.getElementById('modal-title').innerHTML = `
+        <i data-lucide="calendar-plus" class="w-5 h-5 text-brand-600"></i>
+        <span>Thêm công việc mới</span>
+      `;
+      document.getElementById('task-edit-id').value = '';
+      document.getElementById('task-form').reset();
+
+      // Pre-populate date
+      if (prefillDate) {
+        document.getElementById('task-date').value = prefillDate;
+      } else {
+        document.getElementById('task-date').value = formatDateToKey(new Date());
+      }
+
+      document.getElementById('task-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function openAddTaskModalWithStatus(status) {
+      openAddTaskModal();
+      document.getElementById('task-status').value = status;
+    }
+
+    // Open Edit Modal
+    function openEditTaskModal(taskId) {
+      const tasks = getTasks();
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      document.getElementById('modal-title').innerHTML = `
+        <i data-lucide="edit-3" class="w-5 h-5 text-brand-600"></i>
+        <span>Chỉnh sửa công việc</span>
+      `;
+      document.getElementById('task-edit-id').value = task.id;
+      document.getElementById('task-title').value = task.title;
+      document.getElementById('task-date').value = task.date;
+      document.getElementById('task-time').value = task.time || '';
+      document.getElementById('task-priority').value = task.priority;
+      document.getElementById('task-category').value = task.category;
+      document.getElementById('task-status').value = task.status;
+      document.getElementById('task-notes').value = task.notes || '';
+
+      document.getElementById('task-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeTaskModal() {
+      document.getElementById('task-modal').classList.add('hidden');
+    }
+
+    // Task Form Submit
+    document.getElementById('task-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('task-edit-id').value;
+      const tasks = getTasks();
+
+      const newTaskData = {
+        id: editId || 'task-' + Date.now(),
+        title: document.getElementById('task-title').value.trim(),
+        date: document.getElementById('task-date').value,
+        time: document.getElementById('task-time').value,
+        priority: document.getElementById('task-priority').value,
+        category: document.getElementById('task-category').value,
+        status: document.getElementById('task-status').value,
+        notes: document.getElementById('task-notes').value.trim(),
+      };
+
+      if (editId) {
+        const index = tasks.findIndex(t => t.id === editId);
+        if (index !== -1) tasks[index] = newTaskData;
+        showToast('Đã cập nhật công việc thành công!');
+      } else {
+        tasks.push(newTaskData);
+        showToast('Đã thêm công việc mới vào kế hoạch!');
+      }
+
+      saveTasks(tasks);
+      closeTaskModal();
+      
+      // Also close day modal if open
+      closeDayModal();
+    });
+
+    /* Toggle Status check */
+    function toggleTaskStatus(taskId) {
+      const tasks = getTasks();
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      task.status = task.status === 'done' ? 'todo' : 'done';
+      saveTasks(tasks);
+      showToast(task.status === 'done' ? 'Tuyệt vời! Đã hoàn thành công việc.' : 'Đã đưa về trạng thái cần làm.');
+    }
+
+    function updateTaskStatusDirectly(taskId, newStatus) {
+      const tasks = getTasks();
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      task.status = newStatus;
+      saveTasks(tasks);
+      showToast('Đã cập nhật trạng thái việc!');
+    }
+
+    /* Delete with Custom Confirm Modal */
+    let taskPendingDelete = null;
+
+    function promptDeleteTask(taskId) {
+      taskPendingDelete = taskId;
+      document.getElementById('confirm-title').textContent = 'Xóa công việc này?';
+      document.getElementById('confirm-message').textContent = 'Hành động này sẽ xóa vĩnh viễn việc này khỏi kế hoạch tháng của bạn.';
+      document.getElementById('confirm-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('confirm-ok-btn').addEventListener('click', () => {
+      if (taskPendingDelete) {
+        let tasks = getTasks();
+        tasks = tasks.filter(t => t.id !== taskPendingDelete);
+        saveTasks(tasks);
+        taskPendingDelete = null;
+        showToast('Đã xóa công việc khỏi danh sách.');
+        closeDayModal();
+      }
+      document.getElementById('confirm-modal').classList.add('hidden');
+    });
+
+    document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+      taskPendingDelete = null;
+      document.getElementById('confirm-modal').classList.add('hidden');
+    });
+
+    // Day Inspector Modal
+    function openDayModal(dayString, tasksForDay) {
+      selectedDateForTask = dayString;
+      const parts = dayString.split('-');
+      const formattedDateVi = `Ngày ${parts[2]} tháng ${parts[1]} năm ${parts[0]}`;
+      
+      document.getElementById('day-modal-title').textContent = formattedDateVi;
+      document.getElementById('day-modal-subtitle').textContent = `Có ${tasksForDay.length} công việc trong ngày này`;
+
+      const list = document.getElementById('day-tasks-list');
+      list.innerHTML = '';
+
+      if (tasksForDay.length === 0) {
+        list.innerHTML = `
+          <div class="py-8 text-center text-slate-400">
+            <i data-lucide="sun" class="w-8 h-8 mx-auto stroke-1 mb-2 text-amber-400"></i>
+            <p class="text-xs">Chưa có công việc nào trong ngày này. Hãy thong thả hoặc thêm kế hoạch mới!</p>
+          </div>
+        `;
+      } else {
+        tasksForDay.forEach(task => {
+          const item = document.createElement('div');
+          const isDone = task.status === 'done';
+          const catInfo = CATEGORIES[task.category] || CATEGORIES.core;
+          const prioInfo = PRIORITIES[task.priority] || PRIORITIES.medium;
+
+          item.className = 'p-3 rounded-xl border border-slate-200 flex items-center justify-between gap-2 hover:bg-slate-50 transition-colors';
+          item.innerHTML = `
+            <div class="flex items-center gap-3">
+              <button onclick="toggleTaskStatus('${task.id}'); closeDayModal();" class="w-4 h-4 rounded border flex items-center justify-center ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300'}">
+                ${isDone ? '<i data-lucide="check" class="w-3 h-3"></i>' : ''}
+              </button>
+              <div>
+                <p class="text-xs font-semibold ${isDone ? 'line-through text-slate-400' : 'text-slate-800'}">${task.title}</p>
+                <div class="flex items-center gap-2 mt-0.5 text-[10px]">
+                  <span class="${catInfo.color} px-1.5 py-0.5 rounded border">${catInfo.label}</span>
+                  <span class="${prioInfo.badge} px-1.5 py-0.5 rounded border">${prioInfo.label}</span>
+                  ${task.time ? `<span class="text-slate-400 font-medium">🕒 ${task.time}</span>` : ''}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <button onclick="openEditTaskModal('${task.id}')" class="p-1 text-slate-400 hover:text-brand-600">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          `;
+          list.appendChild(item);
+        });
+      }
+
+      document.getElementById('day-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDayModal() {
+      document.getElementById('day-modal').classList.add('hidden');
+    }
+
+    document.getElementById('day-modal-add-btn').addEventListener('click', () => {
+      closeDayModal();
+      openAddTaskModal(selectedDateForTask);
+    });
+
+    /* Monthly Goals Logic */
+    document.getElementById('form-add-goal').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-new-goal');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const ym = `${currentDate.getFullYear()}-${padZero(currentDate.getMonth() + 1)}`;
+      const goals = getGoals();
+      goals.push({
+        id: 'goal-' + Date.now(),
+        monthYear: ym,
+        title: text,
+        completed: false
+      });
+      saveGoals(goals);
+      input.value = '';
+      showToast('Đã thêm mục tiêu trọng tâm mới!');
+    });
+
+    function toggleGoalStatus(goalId) {
+      const goals = getGoals();
+      const g = goals.find(item => item.id === goalId);
+      if (g) {
+        g.completed = !g.completed;
+        saveGoals(goals);
+      }
+    }
+
+    function deleteGoal(goalId) {
+      let goals = getGoals();
+      goals = goals.filter(item => item.id !== goalId);
+      saveGoals(goals);
+      showToast('Đã xóa mục tiêu.');
+    }
+
+    // Toast Notification System
+    function showToast(message, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-message');
+      const iconEl = document.getElementById('toast-icon');
+
+      msgEl.textContent = message;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2600);
+    }
+
+    // Export Data JSON
+    document.getElementById('btn-export-data').addEventListener('click', () => {
+      const backupData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        tasks: getTasks(),
+        goals: getGoals()
+      };
+
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backupData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `KeHoachThang_Backup_${formatDateToKey(new Date())}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Đã xuất file sao lưu JSON thành công!');
+    });
+
+    // Import Data JSON
+    document.getElementById('input-import-file').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (parsed.tasks && Array.isArray(parsed.tasks)) {
+            localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(parsed.tasks));
+            if (parsed.goals && Array.isArray(parsed.goals)) {
+              localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(parsed.goals));
+            }
+            showToast('Khôi phục dữ liệu thành công!');
+            document.getElementById('backup-modal').classList.add('hidden');
+            renderCurrentView();
+            updateHeaderStats();
+          } else {
+            showToast('Tệp JSON không đúng định dạng dữ liệu planner.');
+          }
+        } catch(err) {
+          showToast('Lỗi khi đọc file JSON!');
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Reset Sample Data
+    document.getElementById('btn-reset-sample').addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEY_TASKS);
+      localStorage.removeItem(STORAGE_KEY_GOALS);
+      showToast('Đã đặt lại dữ liệu mẫu ban đầu.');
+      document.getElementById('backup-modal').classList.add('hidden');
+      renderCurrentView();
+      updateHeaderStats();
+    });
+
+    // Month navigation clicks
+    document.getElementById('prev-month-btn').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      updateHeaderStats();
+      renderCurrentView();
+    });
+
+    document.getElementById('next-month-btn').addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      updateHeaderStats();
+      renderCurrentView();
+    });
+
+    document.getElementById('today-btn').addEventListener('click', () => {
+      currentDate = new Date();
+      updateHeaderStats();
+      renderCurrentView();
+    });
+
+    // Modal buttons
+    document.getElementById('btn-open-add-task').addEventListener('click', () => openAddTaskModal());
+    document.getElementById('modal-close-btn').addEventListener('click', closeTaskModal);
+    document.getElementById('modal-cancel-btn').addEventListener('click', closeTaskModal);
+    document.getElementById('day-modal-close-btn').addEventListener('click', closeDayModal);
+
+    // Backup Menu Modal
+    document.getElementById('backup-menu-btn').addEventListener('click', () => {
+      document.getElementById('backup-modal').classList.remove('hidden');
+    });
+    document.getElementById('backup-modal-close-btn').addEventListener('click', () => {
+      document.getElementById('backup-modal').classList.add('hidden');
+    });
+
+    // View tabs switcher
+    document.querySelectorAll('.view-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.view-tab-btn').forEach(b => {
+          b.classList.remove('active-tab', 'text-brand-700', 'bg-brand-50', 'border-brand-200/60', 'shadow-xs');
+          b.classList.add('text-slate-600');
+        });
+
+        btn.classList.add('active-tab', 'text-brand-700', 'bg-brand-50', 'border-brand-200/60', 'shadow-xs');
+        btn.classList.remove('text-slate-600');
+
+        const view = btn.getAttribute('data-view');
+        document.querySelectorAll('.view-content').forEach(content => content.classList.add('hidden'));
+        document.getElementById(`view-${view}`).classList.remove('hidden');
+
+        renderCurrentView();
+      });
+    });
+
+    // Search and filters change listeners
+    document.getElementById('global-search-input').addEventListener('input', () => {
+      if (!document.getElementById('view-list').classList.contains('hidden')) {
+        renderListView();
+      }
+    });
+
+    document.getElementById('filter-category').addEventListener('change', renderListView);
+    document.getElementById('filter-priority').addEventListener('change', renderListView);
+    document.getElementById('filter-status').addEventListener('change', renderListView);
+
+    // Initialize application on load
+    window.addEventListener('DOMContentLoaded', () => {
+      updateHeaderStats();
+      renderCalendar();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
